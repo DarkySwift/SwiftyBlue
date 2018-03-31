@@ -10,22 +10,25 @@ import Foundation
 public final class Adapter {
     
     let identifier: CInt
-//    let socket: CInt
+    let hciSocket: CInt
     
-//    deinit {
-//        close(socket)
-//    }
+    deinit {
+        close(hciSocket)
+    }
     
     public convenience init(address: Address? = nil) throws {
         guard let deviceIdentifier = try HostControllerInterface.getRoute(address: address) else {
             throw Adapter.Error.adapterNotFound
         }
-        self.init(identifier: deviceIdentifier)
+        
+        let hciSocket = try HostControllerInterface.openDevice(deviceIdentifier: deviceIdentifier)
+        
+        self.init(identifier: deviceIdentifier, hciSocket: hciSocket)
     }
     
-    init(identifier: CInt) {
+    init(identifier: CInt, hciSocket: CInt) {
         self.identifier = identifier
-//        self.socket = socket
+        self.hciSocket = hciSocket
     }
 }
 

@@ -17,11 +17,6 @@ typealias HCIIOCTL = HostControllerInterface.IOCTL
 internal struct HostControllerInterface {
     
     static func inquiry() throws {
-//        guard let identifier = try getRoute(address: nil) else {  }
-//        guard identifier >= 0 else { throw POSIXError.fromErrno }
-//
-//        let sock = socket(AF_BLUETOOTH, SOCK_RAW | SOCK_CLOEXEC, 1)
-//        guard sock >= 0 else { throw POSIXError.fromErrno }
         
     }
     
@@ -92,6 +87,28 @@ internal struct HostControllerInterface {
         let a = (options + (UInt32(bitPattern: flag.rawValue) >> 5))
         let b = (1 << (UInt32(bitPattern: flag.rawValue) & 31))
         return true//(a & b) != 0
+    }
+    
+    static func openDevice(deviceIdentifier: CInt) throws -> CInt {
+        guard deviceIdentifier >= 0 else { throw POSIXError(code: .ENODEV) }
+        
+        let hciSocket = socket(AF_BLUETOOTH, SOCK_RAW | SOCK_CLOEXEC, 1)
+        guard hciSocket >= 0 else { throw POSIXError.fromErrno }
+        defer { close(hciSocket) }
+        
+        var socketAddress = SocketAddress()
+        socketAddress.family = sa_family_t(AF_BLUETOOTH)
+        socketAddress.deviceIdentifier = UInt16(deviceIdentifier)
+        
+        let didBind = withUnsafeMutablePointer(to: &socketAddress) {
+            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                bind(hciSocket, $0, socklen_t(MemoryLayout<SocketAddress>.size)) >= 0
+            }
+        }
+        
+        guard didBind else { close(hciSocket); throw POSIXError.fromErrno }
+        
+        return hciSocket
     }
     
 }

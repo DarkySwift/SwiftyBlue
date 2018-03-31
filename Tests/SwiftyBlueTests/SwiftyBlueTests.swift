@@ -4,11 +4,11 @@ import XCTest
 class SwiftyBlueTests: XCTestCase {
     
     func testDeviceInfo() {
-        
         do {
             let adapter = try Adapter()
-            print("identifier", adapter)
-        } catch  {
+            print("Found adapter with identifier", adapter.identifier)
+            print("Found adapter with hciSocket", adapter.hciSocket)
+        } catch {
             print("No adapter found")
         }
     }
