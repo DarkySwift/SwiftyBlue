@@ -74,7 +74,7 @@ internal struct HostControllerInterface {
         let ioctlValue = withUnsafeMutablePointer(to: &deviceList) { pointer -> CInt in
             return ioctl(hciSocket, HCIIOCTL.GetDeviceList, UnsafeMutableRawPointer(pointer))
         }
-        print("ioctlValue", ioctlValue)
+        
         guard ioctlValue >= 0 else { throw POSIXError.fromErrno }
         
         for i in 0..<Int(deviceList.count) {

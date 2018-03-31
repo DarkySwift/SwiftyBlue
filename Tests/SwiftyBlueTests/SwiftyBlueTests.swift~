@@ -7,7 +7,7 @@ class SwiftyBlueTests: XCTestCase {
         
         do {
             let adapter = try Adapter()
-            print("Found adapter with identifier", adapter)
+            print("Found adapter withh identifier", adapter)
         } catch  {
             print("No adapter found")
         }
