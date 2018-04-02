@@ -95,6 +95,14 @@ internal struct HCI {
         return deviceInfo
     }
     
+    static func getDeviceAddress(_ deviceIdentifier: CInt) throws -> Address {
+        let info = try getDeviceInfo(deviceIdentifier)
+        
+        guard testBit(flag: .Up, options: info.flags) else { throw POSIXError(code: .ENETDOWN) }
+        
+        return info.address
+    }
+    
     static func getDeviceIdentifier(flag: HCIDeviceFlag = .Up) throws -> (hciSocket: CInt, deviceIdentifier: CInt)? {
         let hciSocket = socket(AF_BLUETOOTH, SOCK_RAW | SOCK_CLOEXEC, 1)
         
