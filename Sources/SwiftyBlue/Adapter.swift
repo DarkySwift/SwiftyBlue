@@ -43,9 +43,11 @@ public final class Adapter {
 extension Adapter {
     
     public enum Error: Swift.Error {
-        
         case adapterNotFound
-        
+    }
+    
+    public var address: Address? {
+        return try? HCI.getDeviceAddress(identifier)
     }
     
 }
