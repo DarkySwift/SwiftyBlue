@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension HostControllerInterface {
+extension HCI {
 
     internal struct DeviceState {
         

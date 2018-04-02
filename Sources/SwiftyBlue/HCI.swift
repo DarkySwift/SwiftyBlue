@@ -7,23 +7,55 @@
 
 import Foundation
 
-typealias HCIDeviceRequest = HostControllerInterface.DeviceRequest
-typealias HCIDeviceListRequest = HostControllerInterface.DeviceListRequest
-typealias HCIDeviceFlag = HostControllerInterface.DeviceFlag
-typealias HCIDeviceInfo = HostControllerInterface.DeviceInfo
-typealias HCIDeviceState = HostControllerInterface.DeviceState
-typealias HCIIOCTL = HostControllerInterface.IOCTL
+typealias HCIDeviceRequest = HCI.DeviceRequest
+typealias HCIDeviceListRequest = HCI.DeviceListRequest
+typealias HCIDeviceFlag = HCI.DeviceFlag
+typealias HCIDeviceInfo = HCI.DeviceInfo
+typealias HCIDeviceState = HCI.DeviceState
+typealias HCIIOCTL = HCI.IOCTL
+typealias HCIInquiryRequest = HCI.InquiryRequest
 
-internal struct HostControllerInterface {
+internal struct HCI {
     
-    static func inquiry() throws {
+    static func inquiry(deviceIdentifier: CInt, duration: Int, limit: Int) throws -> [InquiryResult] {
         
+        let descriptor = socket(AF_BLUETOOTH, SOCK_RAW | SOCK_CLOEXEC, 1)
+        guard descriptor >= 0 else { throw POSIXError.fromErrno }
+        defer { close(descriptor) }
+        
+        let bufferSize = MemoryLayout<HCIInquiryRequest>.size + (MemoryLayout<InquiryResult>.size * limit)
+        let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
+        defer { buffer.deallocate(capacity: bufferSize) }
+        
+        let deviceClass: (UInt8, UInt8, UInt8) = (0x33, 0x8b, 0x9e)
+        
+        buffer.withMemoryRebound(to: HCIInquiryRequest.self, capacity: 1) { (inquiryRequest) in
+            inquiryRequest.pointee.deviceIndentifier = UInt16(deviceIdentifier)
+            inquiryRequest.pointee.numberResponse = UInt8(limit)
+            inquiryRequest.pointee.length = UInt8(duration)
+            inquiryRequest.pointee.flags = 0
+            inquiryRequest.pointee.lap = deviceClass
+            return
+        }
+        
+        let ioctlValue = ioctl(descriptor, HCIIOCTL.Inquiry, UnsafeMutableRawPointer(buffer))
+        guard ioctlValue >= 0 else { throw POSIXError.fromErrno }
+        
+        let resultCount = buffer.withMemoryRebound(to: HCIInquiryRequest.self, capacity: 1) {
+            Int($0.pointee.numberResponse)
+        }
+        
+        let resultBufferSize = MemoryLayout<InquiryResult>.size * resultCount
+        
+        var results = [InquiryResult](repeating: InquiryResult(), count: resultCount)
+        memcpy(&results, buffer.advanced(by: MemoryLayout<HCIInquiryRequest>.size), resultBufferSize)
+        
+        return results
     }
     
     static func getRoute(address: Address? = nil) throws -> CInt? {
-    		print("getRoute")
         guard let device = try getDeviceIdentifier() else { return nil }
-        print("device", device)
+        
         defer { close(device.hciSocket) }
         
         var deviceInfo = HCIDeviceInfo()
@@ -59,17 +91,16 @@ internal struct HostControllerInterface {
     
     static func getDeviceIdentifier(flag: HCIDeviceFlag = .Up) throws -> (hciSocket: CInt, deviceIdentifier: CInt)? {
         let hciSocket = socket(AF_BLUETOOTH, SOCK_RAW | SOCK_CLOEXEC, 1)
-        print("hciSocket", hciSocket)
+        
         guard hciSocket >= 0 else { throw POSIXError.fromErrno }
         
         var deviceList = HCIDeviceListRequest()
         deviceList.count = UInt16(16)
-        print("deviceList")
         
         let ioctlValue = withUnsafeMutablePointer(to: &deviceList) { pointer -> CInt in
             return ioctl(hciSocket, HCIIOCTL.GetDeviceList, UnsafeMutableRawPointer(pointer))
         }
-        print("ioctlValue", ioctlValue)
+        
         guard ioctlValue >= 0 else { throw POSIXError.fromErrno }
         
         for i in 0..<Int(deviceList.count) {
@@ -113,39 +144,5 @@ internal struct HostControllerInterface {
         
         return hciSocket
     }
-    
-}
-
-extension HostControllerInterface {
-    
-    public struct IOCTL {
-        
-        private static let H                    = CInt(UnicodeScalar(unicodeScalarLiteral: "H").value)
-        
-        /// #define HCIDEVUP    _IOW('H', 201, int)
-        public static let DeviceUp              = IOC.IOW(H, 201, CInt.self)
-        
-        /// #define HCIDEVDOWN    _IOW('H', 202, int)
-        public static let DeviceDown            = IOC.IOW(H, 202, CInt.self)
-        
-        /// #define HCIDEVRESET    _IOW('H', 203, int)
-        public static let DeviceReset           = IOC.IOW(H, 203, CInt.self)
-        
-        /// #define HCIDEVRESTAT    _IOW('H', 204, int)
-        public static let DeviceRestat          = IOC.IOW(H, 204, CInt.self)
-        
-        /// #define HCIGETDEVLIST    _IOR('H', 210, int)
-        public static let GetDeviceList         = IOC.IOR(H, 210, CInt.self)
-        
-        /// #define HCIGETDEVINFO    _IOR('H', 211, int)
-        public static let GetDeviceInfo         = IOC.IOR(H, 211, CInt.self)
-        
-        // TODO: All HCI ioctl defines
-        
-        /// #define HCIINQUIRY    _IOR('H', 240, int)
-        public static let Inquiry               = IOC.IOR(H, 240, CInt.self)
-    }
-    
-    
     
 }

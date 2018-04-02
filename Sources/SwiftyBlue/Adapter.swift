@@ -17,11 +17,11 @@ public final class Adapter {
     }
     
     public convenience init(address: Address? = nil) throws {
-        guard let deviceIdentifier = try HostControllerInterface.getRoute(address: address) else {
+        guard let deviceIdentifier = try HCI.getRoute(address: address) else {
             throw Adapter.Error.adapterNotFound
         }
         
-        let hciSocket = try HostControllerInterface.openDevice(deviceIdentifier: deviceIdentifier)
+        let hciSocket = try HCI.openDevice(deviceIdentifier: deviceIdentifier)
         
         self.init(identifier: deviceIdentifier, hciSocket: hciSocket)
     }
@@ -29,6 +29,14 @@ public final class Adapter {
     init(identifier: CInt, hciSocket: CInt) {
         self.identifier = identifier
         self.hciSocket = hciSocket
+    }
+    
+    public func scan(duration: Int = 8, limit: Int = 255) throws -> [InquiryResult] {
+        precondition(duration > 0, "Scan must be longer than 0 seconds")
+        precondition(limit > 0, "Must scan at least one device")
+        precondition(limit <= 255, "Cannot be larger than UInt8.max")
+        
+        return try HCI.inquiry(deviceIdentifier: identifier, duration: duration, limit: limit)
     }
 }
 

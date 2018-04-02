@@ -77,3 +77,35 @@ internal struct IOC {
         return IOC(READ, type, nr, TYPECHECK(size))
     }
 }
+
+extension HCI {
+    
+    public struct IOCTL {
+        
+        private static let H                    = CInt(UnicodeScalar(unicodeScalarLiteral: "H").value)
+        
+        /// #define HCIDEVUP    _IOW('H', 201, int)
+        public static let DeviceUp              = IOC.IOW(H, 201, CInt.self)
+        
+        /// #define HCIDEVDOWN    _IOW('H', 202, int)
+        public static let DeviceDown            = IOC.IOW(H, 202, CInt.self)
+        
+        /// #define HCIDEVRESET    _IOW('H', 203, int)
+        public static let DeviceReset           = IOC.IOW(H, 203, CInt.self)
+        
+        /// #define HCIDEVRESTAT    _IOW('H', 204, int)
+        public static let DeviceRestat          = IOC.IOW(H, 204, CInt.self)
+        
+        /// #define HCIGETDEVLIST    _IOR('H', 210, int)
+        public static let GetDeviceList         = IOC.IOR(H, 210, CInt.self)
+        
+        /// #define HCIGETDEVINFO    _IOR('H', 211, int)
+        public static let GetDeviceInfo         = IOC.IOR(H, 211, CInt.self)
+        
+        // TODO: All HCI ioctl defines
+        
+        /// #define HCIINQUIRY    _IOR('H', 240, int)
+        public static let Inquiry               = IOC.IOR(H, 240, CInt.self)
+    }
+    
+}

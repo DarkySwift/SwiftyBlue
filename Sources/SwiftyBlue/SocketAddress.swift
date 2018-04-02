@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension HostControllerInterface {
+extension HCI {
     
     struct SocketAddress {
         var family = sa_family_t()

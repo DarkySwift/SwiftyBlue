@@ -7,7 +7,7 @@
 
 import Foundation
 
-extension HostControllerInterface {
+extension HCI {
     
     struct DeviceRequest {
         var identifier: UInt16 = 0
