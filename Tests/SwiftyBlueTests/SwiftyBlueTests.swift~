@@ -21,6 +21,7 @@ class SwiftyBlueTests: XCTestCase {
         let adapter: Adapter
         do {
             adapter = try Adapter()
+            print("Found adapter with address:", adapter.address.rawValue)
             XCTAssert(adapter.identifier >= 0, "identifier must be equals or greater than 0")
             XCTAssert(adapter.hciSocket >= 0, "hciSocket must be equals or greater than 0")
             
