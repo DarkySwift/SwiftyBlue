@@ -22,10 +22,12 @@ internal struct HCI {
         let descriptor = socket(AF_BLUETOOTH, SOCK_RAW | SOCK_CLOEXEC, 1)
         guard descriptor >= 0 else { throw POSIXError.fromErrno }
         defer { close(descriptor) }
-        
+        print("descriptor:", descriptor)        
+
         let bufferSize = MemoryLayout<HCIInquiryRequest>.size + (MemoryLayout<InquiryResult>.size * limit)
         let buffer = UnsafeMutablePointer<UInt8>.allocate(capacity: bufferSize)
         defer { buffer.deallocate(capacity: bufferSize) }
+        print("bufferSize:", bufferSize)
         
         let deviceClass: (UInt8, UInt8, UInt8) = (0x33, 0x8b, 0x9e)
         
@@ -40,12 +42,16 @@ internal struct HCI {
         
         let ioctlValue = ioctl(descriptor, HCIIOCTL.Inquiry, UnsafeMutableRawPointer(buffer))
         guard ioctlValue >= 0 else { throw POSIXError.fromErrno }
+        print("ioctlValue:", ioctlValue)
+        
         
         let resultCount = buffer.withMemoryRebound(to: HCIInquiryRequest.self, capacity: 1) {
             Int($0.pointee.numberResponse)
         }
+        print("resultCount:", resultCount)
         
         let resultBufferSize = MemoryLayout<InquiryResult>.size * resultCount
+        print("resultBufferSize:", resultBufferSize)
         
         var results = [InquiryResult](repeating: InquiryResult(), count: resultCount)
         memcpy(&results, buffer.advanced(by: MemoryLayout<HCIInquiryRequest>.size), resultBufferSize)
